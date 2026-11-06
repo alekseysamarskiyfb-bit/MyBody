@@ -106,6 +106,21 @@ input:focus{border-color:var(--acc)}
 .rep .rb{flex:none;width:52px;height:52px;line-height:52px;background:var(--card2)}
 .acts{margin-top:22px}
 .del{color:var(--red);text-align:center;width:100%;padding:16px 0 0;font-weight:700}
+.days{gap:6px}.days button{padding:8px 0 9px;display:flex;flex-direction:column;align-items:center;gap:1px}
+.days small{font-size:12px;font-weight:700}.days b{font-size:16px;font-weight:700}
+.days button.rest small{opacity:.5}.days button.now::after{top:6px;right:7px}
+.chip{display:inline-flex;align-items:center;gap:6px;background:var(--card);border-radius:999px;padding:10px 15px;font-size:14px;font-weight:700;color:var(--mute)}
+.chip i{width:8px;height:8px;border-radius:50%;background:var(--card2)}.chip i.on{background:var(--acc)}.chip em{font-style:normal;margin-left:4px}
+.nxt{margin-top:18px;background:var(--acc);color:var(--on);border-radius:26px;padding:18px}
+.nxt b{display:block;font:800 15px var(--hd);text-transform:uppercase;margin-bottom:12px}
+.nxt .btn.pri{background:var(--on);color:var(--acc)}
+.sw{width:54px;height:32px;border-radius:16px;background:var(--card2);position:relative;transition:background .25s;flex:none}
+.sw::after{content:"";position:absolute;top:4px;left:4px;width:24px;height:24px;border-radius:50%;background:var(--ink);transition:transform .25s,background .25s}
+.sw.on{background:var(--acc)}.sw.on::after{transform:translateX(22px);background:var(--on)}
+.sh h3{font:800 18px var(--hd);text-transform:uppercase;margin:0 0 8px}.sh .hint{color:var(--mute);font-size:14px;margin:0 0 6px}
+.wrow{display:flex;justify-content:space-between;align-items:center;width:100%;padding:18px 20px;border-radius:20px;background:var(--bg);margin-top:10px;font:800 15px var(--hd);text-transform:uppercase}
+.wrow em{font:700 13px var(--bd);color:var(--mute);font-style:normal;text-transform:none}
+.wrow.cur{background:var(--acc);color:var(--on)}.wrow.cur em{color:var(--on);opacity:.7}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -115,26 +130,34 @@ input:focus{border-color:var(--acc)}
 
 <div id="sheet"></div>
 <script>
-var KEY='wk-planner-v2',DAYS=['Пн','Чт','Сб'],DAYF=['Понедельник','Четверг','Суббота'],WN=['Лёгкая','Средняя','Тяжёлая'],NEXT=['в четверг','в субботу','в понедельник'],GAP=['2 дня','1 день','1 день'];
+var KEY='wk-planner-v3',DAYS=['Пн','Вт','Ср','Чт','Пт','Сб','Вс'],DAYF=['Понедельник','Вторник','Среда','Четверг','Пятница','Суббота','Воскресенье'],PREP=['в понедельник','во вторник','в среду','в четверг','в пятницу','в субботу','в воскресенье'],WN=['Лёгкая','Средняя','Тяжёлая'];
 function uid(){return Math.random().toString(36).slice(2,9)}
 function ex(n,a,b,c,t){return{id:uid(),n:n,s:[a,b,c],t:t||(/с|мин|:/.test(a)?'t':'r')}}
 function today(){var d=new Date();return Math.floor(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())/864e5)}
 function monday(n){return n-((n+3)%7)}
-function seedDay(){return{ra:['1','1','1'],rounds:['2','3','4'],
+function seedDay(){return{on:true,ra:['1','1','1'],rounds:['2','3','4'],
  am:[ex('Круги плечами','10','10','10'),ex('Кошка-корова','8','10','12'),ex('Ягодичный мостик','8','10','12'),ex('Выпад с наклоном','5','6','8'),ex('Растяжка бёдер','30 с','30 с','40 с')],
  pm:[ex('Приседания','10','12','15'),ex('Отжимания','6','8','12'),ex('Ягодичный мостик','12','15','20'),ex('Выпады','8','10','12'),ex('Планка','20 с','30 с','45 с')]}}
-function load(){try{var r=localStorage.getItem(KEY);if(r){var s=JSON.parse(r);if(s&&s.plan){s.plan.forEach(function(d){if(!d.ra)d.ra=['1','1','1'];['am','pm'].forEach(function(b){d[b].forEach(function(e){if(!e.t)e.t=e.s.some(function(v){return/с|мин|:/.test(v)})?'t':'r'})})});return s}}}catch(e){}
- return{start:monday(today()),plan:[seedDay(),seedDay(),seedDay()],prog:{}}}
+function emptyDay(on){return{on:on,ra:['1','1','1'],rounds:['2','3','4'],am:[],pm:[]}}
+function fix(s){s.plan.forEach(function(d){if(!d.ra)d.ra=['1','1','1'];if(d.on===undefined)d.on=true;['am','pm'].forEach(function(b){d[b].forEach(function(e){if(!e.t)e.t=e.s.some(function(v){return/с|мин|:/.test(v)})?'t':'r'})})});return s}
+function load(){var i,pl=[];try{var r=localStorage.getItem(KEY);if(r){var s=JSON.parse(r);if(s&&s.plan&&s.plan.length===7)return fix(s)}
+ var o=localStorage.getItem('wk-planner-v2');if(o){var q=JSON.parse(o);if(q&&q.plan){for(i=0;i<7;i++)pl.push(emptyDay(false));[0,3,5].forEach(function(k,j){if(q.plan[j]){pl[k]=q.plan[j];pl[k].on=true}});return fix({start:q.start,plan:pl,prog:{}})}}}catch(e){}
+ pl=[];for(i=0;i<7;i++)pl.push(i===0||i===3||i===5?seedDay():emptyDay(false));
+ return{start:monday(today()),plan:pl,prog:{}}}
 var S=load(),finB=null,fx=null,pop=null,tab='w',sh=null;
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 function absW(){return Math.floor((monday(today())-S.start)/7)}
 function curMod(){return((absW()%3)+3)%3}
-function todayDay(){var d=(today()+3)%7;return d===0?0:d===3?1:d===5?2:-1}
-var day=(function(){var d=(today()+3)%7;return d<=0?0:d<=3?1:d<=5?2:0})(),ew=curMod();
+function todayDay(){return(today()+3)%7}
+var day=todayDay(),ew=curMod();
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
 function parseT(v){v=String(v).trim().toLowerCase();var m=v.match(/^(\d+):(\d{1,2})$/);if(m)return+m[1]*60+ +m[2];m=v.match(/^(\d+(?:[.,]\d+)?)\s*(мин|м|min|m)/);if(m)return Math.round(parseFloat(m[1].replace(',','.'))*60);m=v.match(/^(\d+)/);return m?+m[1]:0}
 function fmtT(x){return x<60?x+' с':x%60===0?(x/60)+' мин':Math.floor(x/60)+':'+('0'+x%60).slice(-2)}
-function PR(d){var k=absW()+'|'+d;return S.prog[k]||(S.prog[k]={am:{},ar:0,afin:false,r:0,c:{},fin:false})}
+function key(i){return(monday(today())+i)+'|'+curMod()}
+function PR(i){var k=key(i);return S.prog[k]||(S.prog[k]={am:{},ar:0,afin:false,r:0,c:{},fin:false})}
+function dayDone(i){var q=S.prog[key(i)],d=S.plan[i];return!!q&&(d.on?q.fin:(d.am.length?q.afin:false))}
+function setWeek(k){S.start=monday(today())-7*k;for(var i=0;i<7;i++)delete S.prog[(monday(today())+i)+'|'+k];save()}
+function nextInfo(d){var nx=-1,g=8;S.plan.forEach(function(x,i){if(x.on){var k=(i-d+7)%7||7;if(k<g){g=k;nx=i}}});if(nx<0)return'Отдыхай.';var r=g-1;return(r>0?'Дальше отдых: '+r+(r===1?' день':r<5?' дня':' дней')+'. ':'')+'Следующая тренировка '+(g===1?'завтра':PREP[nx])+'.'}
 function rounds(d,w,b){return Math.max(1,parseInt(S.plan[d][b==='am'?'ra':'rounds'][w])||1)}
 function list(b,items,w,done,mode){
  var sw=fx==='swap'||fx==='enter';
@@ -144,34 +167,40 @@ function list(b,items,w,done,mode){
   return'<button class="row'+(done[e.id]?' done':'')+(pop===e.id?' pop':'')+'" data-act="tick" data-b="'+b+'" data-id="'+e.id+'"><span class="ck"></span><span class="nm">'+esc(e.n)+'</span><span class="sc">'+esc(e.s[w])+'</span></button>'}).join('')+'</div>'}
 function blk(b,title,pl,p,cm){
  var am=b==='am',m=am?p.am:p.c,r=(am?p.ar:p.r)|0,fin=am?p.afin:p.fin,items=pl[b],N=rounds(day,cm,b),h='';
- if(fin)return'<h2>'+title+'</h2><div class="fin'+(fx==='fin'&&finB===b?' anim':'')+'"><div class="conf"></div><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="44"/><path d="M32 52l13 13 24-28"/></svg><h3>'+(am?'Зарядка выполнена':'Тренировка выполнена')+'</h3><p>'+(am?'Вечером основная тренировка.':'Дальше отдых: '+GAP[day]+'. Следующая тренировка '+NEXT[day]+'.')+'</p></div>';
+ if(fin)return'<h2>'+title+'</h2><div class="fin'+(fx==='fin'&&finB===b?' anim':'')+'"><div class="conf"></div><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="44"/><path d="M32 52l13 13 24-28"/></svg><h3>'+(am?(pl.on?'Зарядка выполнена':'Растяжка выполнена'):'Тренировка выполнена')+'</h3><p>'+(am?(pl.on?'Вечером основная тренировка.':'Хорошего отдыха.'):nextInfo(day))+'</p></div>';
  var cnt=items.filter(function(e){return m[e.id]}).length;
  h+='<h2>'+title+'<span>'+(N>1?'Подход '+(r+1)+' из '+N:cnt+' из '+items.length)+'</span></h2>';
  if(N>1){h+='<div class="pills">';for(var i=0;i<N;i++)h+='<i class="'+(i<r?'full':'')+'"></i>';h+='</div>'}
  h+=list(b,items,cm,m,'w');
- if(items.length)h+='<button class="go" data-act="next" data-b="'+b+'"'+(cnt<items.length?' disabled':'')+'>'+(r>=N-1?(am?'Завершить зарядку':'Завершить тренировку'):'Следующий подход')+'</button>';
+ if(items.length)h+='<button class="go" data-act="next" data-b="'+b+'"'+(cnt<items.length?' disabled':'')+'>'+(r>=N-1?(am?(pl.on?'Завершить зарядку':'Завершить растяжку'):'Завершить тренировку'):'Следующий подход')+'</button>';
  return h}
 function stp(b){return'<div class="stp" style="margin:0 0 12px">Подходов<div><button class="rb" data-act="rstep" data-b="'+b+'" data-d="-1" aria-label="Меньше">−</button><b>'+rounds(day,ew,b)+'</b><button class="rb" data-act="rstep" data-b="'+b+'" data-d="1" aria-label="Больше">+</button></div></div>'}
 function render(){
- var cm=curMod(),td=todayDay(),pl=S.plan[day],p=PR(day),h='',dock=false;
+ var cm=curMod(),td=todayDay(),pl=S.plan[day],p=PR(day),h='',mon=monday(today());
  document.getElementById('nav').innerHTML=[['w','Тренировка'],['p','План']].map(function(t){return'<button data-t="'+t[0]+'" class="'+(tab===t[0]?'on':'')+'">'+t[1]+'</button>'}).join('');
- document.getElementById('days').innerHTML=DAYS.map(function(n,i){return'<button data-d="'+i+'" class="'+(i===day?'on ':'')+(i===td?'now':'')+'">'+n+(PR(i).fin?' ✓':'')+'</button>'}).join('');
+ document.getElementById('days').innerHTML=DAYS.map(function(n,i){return'<button data-d="'+i+'" class="'+(i===day?'on ':'')+(i===td?'now ':'')+(S.plan[i].on?'':'rest')+'"><small>'+n+'</small><b>'+(dayDone(i)?'✓':new Date((mon+i)*864e5).getUTCDate())+'</b></button>'}).join('');
  if(tab==='w'){
-  
-  h+='<div class="ttl"><span>'+DAYF[day]+'</span>'+WN[cm]+' неделя</div><div class="dots">'+[0,1,2].map(function(i){return'<i class="'+(i===cm?'on':'')+'"></i>'}).join('')+'<em>Неделя '+(cm+1)+' из 3</em></div>';
-  h+=blk('am','Утро',pl,p,cm);
-  h+=blk('pm','Вечер',pl,p,cm);
+  var ons=[0,1,2,3,4,5,6].filter(function(i){return S.plan[i].on});
+  h+='<div class="ttl"><span>'+DAYF[day]+'</span>'+(pl.on?WN[cm]+' неделя':'День отдыха')+'</div>';
+  h+='<button class="chip" data-act="wk">'+[0,1,2].map(function(i){return'<i class="'+(i===cm?'on':'')+'"></i>'}).join('')+'<em>Неделя '+(cm+1)+' из 3 ▾</em></button>';
+  if(ons.length&&ons.every(dayDone))h+='<div class="nxt"><b>Неделя выполнена</b><button class="btn pri" data-act="nextw">Перейти: '+WN[(cm+1)%3].toLowerCase()+' неделя</button></div>';
+  if(pl.on)h+=blk('am','Утро',pl,p,cm)+blk('pm','Вечер',pl,p,cm);
+  else if(pl.am.length)h+=blk('am','Растяжка',pl,p,cm);
+  else h+='<div class="empty" style="margin-top:24px">Сегодня отдых. Чтобы добавить растяжку, открой вкладку «План».</div>';
  }else{
-  h+='<div class="ttl"><span>План</span>'+DAYF[day]+'</div><p style="color:var(--mute);margin:0;font-size:15px">Выбери неделю и нажми на упражнение, чтобы изменить повторы.</p>';
+  h+='<div class="ttl"><span>План</span>'+DAYF[day]+'</div>';
+  h+='<div class="stp" style="margin-top:0">Тренировочный день<button class="sw'+(pl.on?' on':'')+'" data-act="onoff" aria-label="Тренировочный день"></button></div>';
+  h+='<p style="color:var(--mute);margin:12px 0 0;font-size:15px">'+(pl.on?'Выбери неделю и нажми на упражнение, чтобы изменить повторы.':'В день отдыха можно оставить только необязательную растяжку.')+'</p>';
   h+='<div class="seg">'+WN.map(function(n,i){return'<button data-w="'+i+'" class="'+(i===ew?'on':'')+'">'+n+'</button>'}).join('')+'</div>';
-  [['am','Утро'],['pm','Вечер']].forEach(function(b){h+='<h2>'+b[1]+'</h2>'+stp(b[0])+list(b[0],pl[b[0]],ew,{},'p')+'<button class="add" data-act="add" data-b="'+b[0]+'">+ Добавить упражнение</button>'});
-  if(ew!==cm)h+='<button class="lnk" data-act="cur">Сделать «'+WN[ew].toLowerCase()+'» текущей неделей</button>';
+  (pl.on?[['am','Утро'],['pm','Вечер']]:[['am','Растяжка']]).forEach(function(b){h+='<h2>'+b[1]+'</h2>'+stp(b[0])+list(b[0],pl[b[0]],ew,{},'p')+'<button class="add" data-act="add" data-b="'+b[0]+'">+ Добавить упражнение</button>'});
   h+='<button class="lnk" data-act="clear">Сбросить прогресс этого дня</button>';
  }
- 
  document.getElementById('app').innerHTML=h;
  if(fx==='fin')confetti();
  fx=null;pop=null}
+function openWeeks(){sh={wk:1};var cm=curMod(),el=document.getElementById('sheet');
+ el.innerHTML='<div class="bd" data-act="close"></div><div class="sh"><div class="grab"></div><h3>Неделя цикла</h3><p class="hint">Неделя меняется сама каждый понедельник. Если выбрать другую вручную, она начнётся заново.</p>'+WN.map(function(n,i){return'<button class="wrow'+(i===cm?' cur':'')+'" data-act="'+(i===cm?'close':'pickw')+'" data-k="'+i+'"><span>'+n+'</span><em>'+(i===cm?'Сейчас':'Выбрать')+'</em></button>'}).join('')+'</div>';
+ requestAnimationFrame(function(){requestAnimationFrame(function(){el.classList.add('open')})})}
 function confetti(){var c=document.querySelector('.fin.anim .conf');if(!c)return;var col=['var(--on)','#fff','rgba(0,0,0,.35)'],h='';
  for(var i=0;i<28;i++){var a=Math.random()*Math.PI*2,d=70+Math.random()*100;h+='<i style="background:'+col[i%3]+';--x:'+Math.round(Math.cos(a)*d)+'px;--y:'+Math.round(Math.sin(a)*d-20)+'px;--r:'+Math.round(Math.random()*540)+'deg;animation-delay:'+(0.7+Math.random()*.15).toFixed(2)+'s"></i>'}
  c.innerHTML=h}
@@ -198,8 +227,11 @@ document.addEventListener('click',function(ev){
   save();closeSheet();render()}
  else if(a==='del'){pl[sh.b]=pl[sh.b].filter(function(x){return x.id!==sh.id});save();closeSheet();render()}
  else if(a==='rstep'){var rb=t.dataset.b,v=Math.min(9,Math.max(1,rounds(day,ew,rb)+(+t.dataset.d)));pl[rb==='am'?'ra':'rounds'][ew]=String(v);save();render()}
- else if(a==='cur'){S.start=monday(today())-7*ew;save();render()}
- else if(a==='clear'){delete S.prog[absW()+'|'+day];save();render()}
+ else if(a==='wk')openWeeks();
+ else if(a==='pickw'){setWeek(+t.dataset.k);closeSheet();fx='enter';render()}
+ else if(a==='nextw'){setWeek((curMod()+1)%3);fx='enter';render()}
+ else if(a==='onoff'){pl.on=!pl.on;save();render()}
+ else if(a==='clear'){delete S.prog[key(day)];save();render()}
 });
 render();
 </script>
