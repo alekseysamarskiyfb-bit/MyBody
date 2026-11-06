@@ -33,8 +33,6 @@ header{position:sticky;top:env(safe-area-inset-top,0px);z-index:11;background:va
 .days{display:flex;gap:8px;margin-top:10px}
 .days button{background:var(--card);padding:10px 0;font-size:15px;position:relative}
 .days button.on{background:var(--acc);color:var(--on)}
-.days button.now::after{content:"";position:absolute;top:7px;right:12px;width:5px;height:5px;border-radius:50%;background:var(--acc)}
-.days button.on.now::after{background:var(--on)}
 main{padding:10px 16px 48px;max-width:560px;margin:0 auto}
 .ttl{font:800 25px/1.12 var(--hd);text-transform:uppercase;letter-spacing:-.02em;margin:14px 0 8px}
 .ttl span{display:block;color:var(--mute)}
@@ -108,7 +106,11 @@ input:focus{border-color:var(--acc)}
 .del{color:var(--red);text-align:center;width:100%;padding:16px 0 0;font-weight:700}
 .days{gap:6px}.days button{padding:8px 0 9px;display:flex;flex-direction:column;align-items:center;gap:1px}
 .days small{font-size:12px;font-weight:700}.days b{font-size:16px;font-weight:700}
-.days button.rest small{opacity:.5}.days button.now::after{top:6px;right:7px}
+.days button.rest:not(.now) small{opacity:.5}.days b{display:flex;align-items:center;height:22px}
+:root{--accT:var(--acc)}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--accT:#587F00}}
+:root[data-theme="light"]{--accT:#587F00}
+.days button.now:not(.on),.days button.done:not(.on) b{color:var(--accT)}
 .chip{display:inline-flex;align-items:center;gap:6px;background:var(--card);border-radius:999px;padding:10px 15px;font-size:14px;font-weight:700;color:var(--mute)}
 .chip i{width:8px;height:8px;border-radius:50%;background:var(--card2)}.chip i.on{background:var(--acc)}.chip em{font-style:normal;margin-left:4px}
 .nxt{margin-top:18px;background:var(--acc);color:var(--on);border-radius:26px;padding:18px}
@@ -138,6 +140,7 @@ function monday(n){return n-((n+3)%7)}
 function seedDay(){return{on:true,ra:['1','1','1'],rounds:['2','3','4'],
  am:[ex('Круги плечами','10','10','10'),ex('Кошка-корова','8','10','12'),ex('Ягодичный мостик','8','10','12'),ex('Выпад с наклоном','5','6','8'),ex('Растяжка бёдер','30 с','30 с','40 с')],
  pm:[ex('Приседания','10','12','15'),ex('Отжимания','6','8','12'),ex('Ягодичный мостик','12','15','20'),ex('Выпады','8','10','12'),ex('Планка','20 с','30 с','45 с')]}}
+var DB='<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-label="Выполнено"><rect x="1" y="9" width="3" height="6" rx="1"/><rect x="4.5" y="6" width="3.5" height="12" rx="1.2"/><rect x="8" y="11" width="8" height="2"/><rect x="16" y="6" width="3.5" height="12" rx="1.2"/><rect x="20" y="9" width="3" height="6" rx="1"/></svg>';
 function emptyDay(on){return{on:on,ra:['1','1','1'],rounds:['2','3','4'],am:[],pm:[]}}
 function fix(s){s.plan.forEach(function(d){if(!d.ra)d.ra=['1','1','1'];if(d.on===undefined)d.on=true;['am','pm'].forEach(function(b){d[b].forEach(function(e){if(!e.t)e.t=e.s.some(function(v){return/с|мин|:/.test(v)})?'t':'r'})})});return s}
 function load(){var i,pl=[];try{var r=localStorage.getItem(KEY);if(r){var s=JSON.parse(r);if(s&&s.plan&&s.plan.length===7)return fix(s)}
@@ -178,7 +181,7 @@ function stp(b){return'<div class="stp" style="margin:0 0 12px">Подходов
 function render(){
  var cm=curMod(),td=todayDay(),pl=S.plan[day],p=PR(day),h='',mon=monday(today());
  document.getElementById('nav').innerHTML=[['w','Тренировка'],['p','План']].map(function(t){return'<button data-t="'+t[0]+'" class="'+(tab===t[0]?'on':'')+'">'+t[1]+'</button>'}).join('');
- document.getElementById('days').innerHTML=DAYS.map(function(n,i){return'<button data-d="'+i+'" class="'+(i===day?'on ':'')+(i===td?'now ':'')+(S.plan[i].on?'':'rest')+'"><small>'+n+'</small><b>'+(dayDone(i)?'✓':new Date((mon+i)*864e5).getUTCDate())+'</b></button>'}).join('');
+ document.getElementById('days').innerHTML=DAYS.map(function(n,i){return'<button data-d="'+i+'" class="'+(i===day?'on ':'')+(i===td?'now ':'')+(S.plan[i].on?'':'rest ')+(dayDone(i)?'done':'')+'"><small>'+n+'</small><b>'+(dayDone(i)?DB:new Date((mon+i)*864e5).getUTCDate())+'</b></button>'}).join('');
  if(tab==='w'){
   var ons=[0,1,2,3,4,5,6].filter(function(i){return S.plan[i].on});
   h+='<div class="ttl"><span>'+DAYF[day]+'</span>'+(pl.on?WN[cm]+' неделя':'День отдыха')+'</div>';
@@ -233,7 +236,11 @@ document.addEventListener('click',function(ev){
  else if(a==='onoff'){pl.on=!pl.on;save();render()}
  else if(a==='clear'){delete S.prog[key(day)];save();render()}
 });
-render();
+var lastD=today();
+function tick(){var n=today();if(n!==lastD){lastD=n;day=todayDay();ew=curMod();fx='enter';render()}}
+document.addEventListener('visibilitychange',function(){if(!document.hidden)tick()});
+window.addEventListener('focus',tick);window.addEventListener('pageshow',tick);setInterval(tick,60000);
+save();render();
 </script>
 </body>
 </html>
